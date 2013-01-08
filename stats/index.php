@@ -1,7 +1,8 @@
 <?
 //mysql connection
-$con = mysql_connect("localhost","*","*");
-mysql_select_db("*", $con);
+$con = mysql_connect("localhost","webdev","1teambos");
+mysql_select_db("webdev", $con);
+require('a2x.php');
 ?>
 
 
@@ -53,7 +54,7 @@ $get_tankers = mysql_query("SELECT * FROM a_tstats");
 while($tnkr = mysql_fetch_array($get_tankers)){
 
 echo '<tr class="odd gradeA">';
-echo '<td>'.$tnkr['user'].'</td>
+echo '<td><a href="http://bos.mrpg.co/stats/?user='.$tnkr['user'].'">'.$tnkr['user'].'</a></td>
 	<td align="center">'.$tnkr['battles'].'</td>
 	<td align="center">'.$tnkr['btank'].'</td>
 	<td align="center">'.$tnkr['aveeff'].'</td>';
@@ -116,6 +117,8 @@ $tbattles = 0;
 $besttank = array();
 $axvm = 0;
 
+$xml = new SimpleXMLElement('<root/>');
+
 foreach($data['tanks'] as $tank => $name){
 
 $akpb = $name['tankdata']['frags'] / $name['tankdata']['battlesCount'];
@@ -144,85 +147,6 @@ $def = $name['tankdata']['droppedCapturePoints'] / $name['tankdata']['battlesCou
 
 $dpm = $add / $tlive;
 
-	
-?>
-<script>
-        tankLvl.battle_count = 0;
-
-        for(var i = 1; i <= 10; i++) {
-            tankLvl[i] = { battle_count: 0 };
-        }
-
-        data.vehicles.forEach(function(item) {
-            tankLvl[item.level].battle_count += item.battle_count;
-            tankLvl.battle_count += item.battle_count;
-        });
-
-        for(var j = 1; j <= 10; j++) {
-            mid += j * tankLvl[j].battle_count / tankLvl.battle_count;
-        }
-
-        if(battlesCount !== 0) {
-            var battles = data.battles,
-                dmg = <?php echo json_encode($add); ?>,
-                des = <?php echo json_encode($akpb); ?>,
-                det = <?php echo json_encode($det); ?>,
-                cap = <?php echo json_encode($cap); ?>,
-                def = <?php echo json_encode($def); ?>;
-
-            return Math.round((dmg * (10 / mid) * (0.15 + mid / 50) + des * (0.35 - mid / 50)
-                * 1000 + det * 200 + cap * 150 + def * 150) / 10, 0) * 10;
-        } else {
-            return 0;
-        }
-    };
-
-    var getVehicleType = function(vclass) {
-        switch(vclass.toLowerCase()) {
-            case "lighttank": return "LT";
-            case "mediumtank": return "MT";
-            case "heavytank": return "HT";
-            case "at-spg": return "TD";
-            case "spg": return "SPG";
-            default: return "unknown";
-        }
-    };
-
-    // log
-    var log = function(str) {
-        var now = new Date();
-        var s = now.getFullYear() + "-" +
-            (now.getMonth() < 9 ? "0" : "") + (now.getMonth() + 1) + "-" +
-            (now.getDate() < 10 ? "0" : "") + now.getDate() + " " +
-            now.toLocaleTimeString();
-        console.log(s + ": " + str);
-    };
-
-    // debug
-    var debug = function(str) {
-        log("DEBUG: " + str);
-    };
-
-    // exports
-    return {
-        calculateEfficiency: calculateEfficiency,
-        getVehicleType: getVehicleType,
-        log: log,
-        debug: debug
-    }
-})();
-
-</script>
-
-<?
-
-
-
-
-
-
-
-
 if($name['tankdata']['battlesCount'] >= '30'){ 
 
 $eff = (($add / 4) * $akpb) * $acp + $axp - ($hmr * $deths);
@@ -237,7 +161,14 @@ $axvm += $xvm;
 $ead += '1';
 $tbattles += $name['tankdata']['battlesCount'];
 
-$besttank = array($eff => 'eff', $tank => 'tank');
+// XML OUTPUT
+
+$bstank = $xml->addChild('stats');
+$bstank->addAttribute('tank',$tank);
+$bstank->addChild('bos_eff', $eff);
+$bstank->addChild('xvm_eff', $xvm);
+
+//=========================
 
 
 echo '<tr class="odd gradeA">';
@@ -281,35 +212,34 @@ $oxvm = $axvm / $ead;
 echo 'XVM EFF: '.substr($oxvm,0,6).' | ';
 
 if(trange($oaeff,'0','449')){
-	echo '<font color="red">AVE EFF: '.substr($oaeff,0,6).'</font> | ';
+	echo '<font color="red">BOS EFF: '.substr($oaeff,0,6).'</font> | ';
 }
 else if(trange($oaeff,'450','649')){
-	echo '<font color="orange">AVE EFF: '.substr($oaeff,0,6).'</font> | ';
+	echo '<font color="orange">BOS EFF: '.substr($oaeff,0,6).'</font> | ';
 	}
 else if(trange($oaeff,'650','899')){
-	echo '<font color="green">AVE EFF: '.substr($oaeff,0,6).'</font> | ';
+	echo '<font color="green">BOS EFF: '.substr($oaeff,0,6).'</font> | ';
 	}	  
 else if(trange($oaeff,'900','1199')){
-	echo '<font color="blue">AVE EFF: '.substr($oaeff,0,6).'</font> | ';
+	echo '<font color="blue">BOS EFF: '.substr($oaeff,0,6).'</font> | ';
 	}
 else if($oaeff > '1200'){
-	echo '<font color="purple">AVE EFF: '.substr($oaeff,0,6).'</font> | ';
+	echo '<font color="purple">BOS EFF: '.substr($oaeff,0,6).'</font> | ';
 	}else{}
 
 
 
 echo '<font color="blue">BEST TANK: '.max($besttank).'</font></code>';
 
-$xml = new SimpleXMLElement('<root/>');
 
-array_walk_recursive($besttank, array ($xml, 'addChild'));
-
+//Print XML info
+$dom = dom_import_simplexml($xml)->ownerDocument;
+$dom->formatOutput = true;
 echo '<pre>';
-echo htmlentities($xml->asXML());
-
-
-echo json_encode($besttank);
+echo htmlspecialchars($dom->saveXML());
 echo '</pre>';
+
+
 
 mysql_query("INSERT INTO a_tstats (aveeff, btank, battles, user) VALUES ('$oaeff','".max($besttank)."','$tbattles','".$_GET['user']."') ON DUPLICATE KEY UPDATE aveeff='$oaeff', btank='".max($besttank)."', battles='$tbattles'");
 
