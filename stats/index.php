@@ -1,7 +1,7 @@
 <?
 //mysql connection
-$con = mysql_connect("localhost","webdev","1teambos");
-mysql_select_db("webdev", $con);
+$con = mysql_connect("localhost","*","*");
+mysql_select_db("*", $con);
 require('a2x.php');
 ?>
 
