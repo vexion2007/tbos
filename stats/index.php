@@ -2,7 +2,7 @@
 //mysql connection
 $con = mysql_connect("localhost","*","*");
 mysql_select_db("*", $con);
-require('a2x.php');
+
 ?>
 
 
